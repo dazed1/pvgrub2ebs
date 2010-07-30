@@ -45,18 +45,11 @@ none                    /dev/pts                devpts  gid=5,mode=620 0 0
 none                    /dev/shm                tmpfs   defaults 0 0
 none                    /proc                   proc    defaults 0 0
 none                    /sys                    sysfs   defaults 0 0
-/dev/sdc1               swap                    swap    pri=0,nofail 0 0
-/dev/sdc2               /tmp                    ext3    relatime,nosuid,nofail 0 0
+/dev/xvdc1               swap                    swap    pri=0,nofail 0 0
+/dev/xvdc2               /tmp                    ext3    relatime,nosuid,nofail 0 0
 EOL
-############END FILESYSTEMS SECTION#########
 
 for i in console null zero ; do /sbin/MAKEDEV -d /mnt/chroot/dev -x $i ; done
-mknod -m 0640 /mnt/chroot/dev/sdf b 8 80
-mknod -m 0640 /mnt/chroot/dev/sdf1 b 8 81
-mknod -m 0640 /mnt/chroot/dev/sdf2 b 8 82
-mknod -m 0640 /mnt/chroot/dev/sdf3 b 8 83
-mknod -m 0640 /mnt/chroot/dev/sdf4 b 8 84
-chown root:disk /mnt/chroot/dev/sd*
 
 cat <<EOL > /tmp/yumec2.conf
 [main]
@@ -101,17 +94,6 @@ chown root:root /dev/random
 mknod -m 0644 /dev/urandom c 1 9
 chown root:root /dev/urandom
 
-mknod -m 0640 /dev/sda b 8 0
-mknod -m 0640 /dev/sda1 b 8 1
-mknod -m 0640 /dev/sda2 b 8 2
-mknod -m 0640 /dev/sda3 b 8 3
-mknod -m 0640 /dev/sdc b 8 32
-mknod -m 0640 /dev/sdc1 b 8 33
-mknod -m 0640 /dev/sdc2 b 8 34
-mknod -m 0640 /dev/sdc3 b 8 35
-mknod -m 0640 /dev/sdc4 b 8 36
-chown root:disk /dev/sd*
-
 echo -e "o\nn\np\n1\n1\n+10G\nt\n1\n82\nn\np\n2\n\n\nw\n" | fdisk /dev/sdc
 echo "y" | mkfs.ext4 /dev/sdc2
 mkswap /dev/sdc1
@@ -136,8 +118,8 @@ chroot /mnt/chroot ln -s /boot/grub/grub.conf /boot/grub/menu.lst
 kern=`ls /mnt/chroot/boot/vm*PAE|awk -F/ '{print $NF}'`
 ird=`ls /mnt/chroot/boot/ini*PAE.img|awk -F/ '{print $NF}'`
 
-sed -ie "s/initramfs/$ird/" /mnt/chroot/boot/grub/grub.conf
 sed -ie "s/vmlinuz/$kern/" /mnt/chroot/boot/grub/grub.conf
+sed -ie "s/initramfs/$ird/" /mnt/chroot/boot/grub/grub.conf
 
 sync
 
