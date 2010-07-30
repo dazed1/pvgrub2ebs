@@ -94,9 +94,9 @@ chown root:root /dev/random
 mknod -m 0644 /dev/urandom c 1 9
 chown root:root /dev/urandom
 
-echo -e "o\nn\np\n1\n1\n+10G\nt\n1\n82\nn\np\n2\n\n\nw\n" | fdisk /dev/sdc
-echo "y" | mkfs.ext4 /dev/sdc2
-mkswap /dev/sdc1
+echo -e "o\nn\np\n1\n1\n+10G\nt\n1\n82\nn\np\n2\n\n\nw\n" | fdisk /dev/xvdc
+echo "y" | mkfs.ext4 /dev/xvdc2
+mkswap /dev/xvdc1
 EOF
 
 chroot /mnt/chroot chkconfig --level 2345 NetworkManager off
