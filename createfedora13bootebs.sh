@@ -1,19 +1,9 @@
 #!/bin/sh
 # createfedora13bootebs-i386.sh
-# Version 0.4
+# Version 0.6
 # version0.1 from:  http://www.ioncannon.net/system-administration/894/fedora-12-bootable-root-ebs-on-ec2/
-# changelog:
-#   Version 0.2:    massive changes.  More useful to consider this the "initial" version
-#                   note: non-working.  Most likely not because of anything in this script
-#   Version 0.3:    stepping back from partitioning the root device, changing to hd0 pv-grub aki.
-#                   Removed selinux; bad Brian!  Using the "it's complicated" excuse.
-#                   Other minor changes.
-#   Version 0.4:    added some sed for a menu.lst that will function for kernels other than what is out today.
-#                   gathered some of the sections together with like-stuff.
-#                   Changed some things to make them easier to un-shell (perl?) later
 
-# assumptions: you're on an amazon instance that has an extra EBS mounted at /dev/sdf, and internet access
-# TODO: do i386/x86_64 install based on what the instance is
+# assumptions: you're on an amazon instance that has an extra EBS mounted at /dev/sdf
 
 #clear table, create /boot, create swap, create /
 #echo -e "o\nn\np\n1\n1\n+100M\nn\np\n2\n\n+2G\nt\n2\n82\nn\np\n3\n\n\na\n1\nw\n" | fdisk /dev/sdf
@@ -21,32 +11,24 @@
 echo "y" | mkfs.ext4 /dev/sdf
 
 ##########FILESYSTEMS SECTION##############
+# forgive me, I used gentoo years ago during a period - came back to fedora, though!
 mkdir /mnt/chroot
 mount /dev/sdf /mnt/chroot
 mkdir /mnt/chroot/dev /mnt/chroot/proc /mnt/chroot/etc /mnt/chroot/sys
-# forgive me, I used gentoo years ago during a period - came back to fedora, though!
 mount -o bind /dev /mnt/chroot/dev
 mount -o bind /dev/pts /mnt/chroot/dev/pts
 mount -o bind /dev/shm /mnt/chroot/dev/shm
 mount -o bind /proc /mnt/chroot/proc
 mount -o bind /sys /mnt/chroot/sys
 
-cat <<EOL > /mnt/chroot/etc/mtab
-/dev/sdf / ext4 rw 0 0
-none /proc proc rw 0 0
-none /sys sysfs rw 0 0
-none /dev/pts devpts rw,gid=5,mode=620 0 0
-none /dev/shm tmpfs rw 0 0
-EOL
-
 cat <<EOL > /mnt/chroot/etc/fstab
-/dev/xvda1               /                       ext4    relatime 1 1
+/dev/xvda1              /                       ext4    relatime 1 1
 none                    /dev/pts                devpts  gid=5,mode=620 0 0
 none                    /dev/shm                tmpfs   defaults 0 0
 none                    /proc                   proc    defaults 0 0
 none                    /sys                    sysfs   defaults 0 0
-/dev/xvdc1               swap                    swap    pri=0,nofail 0 0
-/dev/xvdc2               /tmp                    ext3    relatime,nosuid,nofail 0 0
+/dev/xvdc1              swap                    swap    pri=0,nofail 0 0
+/dev/xvdc2              /tmp                    ext3    relatime,nosuid,nofail 0 0
 EOL
 
 for i in console null zero ; do /sbin/MAKEDEV -d /mnt/chroot/dev -x $i ; done
