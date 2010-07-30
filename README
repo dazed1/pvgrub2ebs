@@ -1,0 +1,102 @@
+==Overview of Steps==
+
+# create build instance
+# create build target volume
+# build custom OS
+# detach volume
+# create snapshot
+# create AMI
+
+Done!  That was easy!  Would you like examples?  Ok...well for now, I'll
+ reference ec2-api-tools commands, until I clean up my own (boto) tools for
+ external use.  That's right, I have some sensitive stuff hard-coded in my
+ tools.  I'm a bad person.
+
+==create build instance==
+
+This doesn't need to be it's own instance.  It can be an instance you already
+ have.  It can be anything; for my own purposes I needed something that
+ supported ext4.  Will need to be the same sizeof(int) as the target.
+
+==create build target volume==
+
+This is the volume the new OS will be installed upon, and of which a snapshot
+ will be created.  Make it, attach it to the build host - note the below script
+ has "/dev/sdf" as the target, so it might be easiest to just attach there.
+
+==build custom OS==
+
+I have an early "createfedora13bootebs.sh" script; that will do everything to
+ build a fed13 OS on the target volume.  Feel free to replace it with a much
+ more reasonable kickstart config, and have anaconda go to town.  Or, gleening
+ the important details from that script, install freebsd (or whatever else) 
+ instead of fedora13. Anything you can either install inside a chroot, or simply
+ upload the image of, is doable.
+
+The *trick* in the end was the /boot directory contents; using the "hd0" image
+ means that pv-grub is expecting /dev/xvda1 to be a partitionless target; the
+ other option, hd0, is "root (hd0,0)" in a standard grub file - meaning, it's
+ pointing to the first partition on the first drive (instead of hd0, the whole
+ drive).  Nothing other than menu.lst matters in the /boot/grub/ directory; for
+ many linux distros, link up grub.conf to menu.lst so that packages don't
+ get confused.  The purpose is to allow you to later do a kernel update and
+ not have to do anything special, after all; let the kernel rpm update your
+ grub.conf/menu.lst for you.  Or, don't; really your call.  Things like "stage1"
+ and such are irrelevant though.  I'll be getting to the bottom of the hd0/hd00
+ stuff soon; ec2-api-tools has a "--root-device-name" option that I haven't
+ made helpful, but I'm sure the answer to the riddle lies with an attribute
+ like that.
+
+Also note the root= kernel line, and the / device in fstab; still that xvda1
+ device.  As a person who didn't come from a vm background (you want your own
+ environment?  ok, here's your chroot...) that was less obvious to me than
+ it may be to almost everyone else.  The fact that amazon is claiming the
+ device is mounted at /dev/sda1 is meaningless, apparently.  It's /dev/xvda1
+
+==Detach volume==
+
+This is simple enough; just run
+ ec2-detach-volume --region region_name volume_id
+
+==create snapshot==
+
+run:
+ ec2-create-snapshot --region region_name --description "description" volume_id
+
+Many guides on the inter-tubes will tell you to stop mysql, run rsync, wash your
+ dishes, order some pizza, etc.  None of that is necessary here though, because
+ we're not doing the dangerous activity of making a snapshot of a running OS and
+ calling it blessed; we're making a snapshot of an OS that was build inside a
+ chroot environment, which was then unmounted.  The filesystems are in a pure,
+ clean, unmounted, happy state.  Besides, pizza is bad for you.  I've seen this
+ step take between 2 and 45 seconds for my installs.
+
+==create AMI==
+
+First, you'll need to know what pv-grub AKI to use.  If your local tools are set
+ up correctly, you should be able to run something like this (note despite
+ "Enabling User Provided Kernels in Amazon EC2" I am using hd0 not hd00, because
+ I haven't spent the extra time to get segregated partitions to work yet).
+
+ ec2-describe-images -H --region us-west-1 -x all|grep "pv-grub-hd0"
+
+So now you have your snapshot, your AKI...what else do you need?  Nothing!
+
+ ec2-register --region region_name -n "ShortName" -d "Long Desc" \
+ --block-device-mapping /dev/sdc=ephemeral0 --snapshot snap-id \
+ --architecture i386 --kernel aki-id
+
+now just start an instance using that AMI and all the defaults, et viola!
+
+==resources==
+Oh hey, amazon wasn't the first to do this pv-grub thing.  Maybe the problem is
+ already solved elsewhere?
+
+http://www.linode.com/wiki/index.php/PV-GRUB
+
+Too bad I didn't see (think of) that until the end of my second day.  Oh well,
+ learning experience.  Also found these helpful:
+
+http://developer.amazonwebservices.com/connect/entry.jspa?externalID=3967&categoryID=174
+http://docs.amazonwebservices.com/AWSEC2/latest/UserGuide/index.html?block-device-mapping-concepts.html
+ 
