@@ -14,7 +14,7 @@ yum -y install e2fsprogs
 #echo -e "o\nn\np\n1\n1\n+100M\nn\np\n2\n\n+2G\nt\n2\n82\nn\np\n3\n\n\na\n1\nw\n" | fdisk /dev/xvdf
 
 echo -e "o\nw\n" | fdisk /dev/xvdf
-echo "y" | mkfs.ext3 /dev/xvdf
+mkfs.ext3 -F /dev/xvdf
 
 mkdir /mnt/chroot
 mount /dev/xvdf /mnt/chroot
