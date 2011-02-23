@@ -97,7 +97,7 @@ EOL
 chroot /mnt/chroot ln -s /boot/grub/grub.conf /boot/grub/menu.lst
 
 kern=`ls /mnt/chroot/boot/vmlin*|awk -F/ '{print $NF}'`
-ird=`ls /mnt/chroot/boot/ini*.img|awk -F/ '{print $NF}'`
+ird=`ls /mnt/chroot/boot/initramfs*.img|awk -F/ '{print $NF}'`
 
 sed -ie "s/vmlinuz/$kern/" /mnt/chroot/boot/grub/grub.conf
 sed -ie "s/initramfs/$ird/" /mnt/chroot/boot/grub/grub.conf
